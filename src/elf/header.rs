@@ -62,6 +62,10 @@ impl Parseable for Elf64_Ehdr {
         }
 
         // here, would the validation of the EI_OSABI and EI_ABIVERSION
+        // witch describes respectivily, the operational system ABI and
+        // it version, but normally, we just accept them
+
+        
         
         return Ok();
     }
