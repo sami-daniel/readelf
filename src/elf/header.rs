@@ -1,4 +1,4 @@
-use crate::elf::validator::elf64bitvalidator::{self, elf64bitvalidationerrors};
+use crate::elf::validator::elf64bitvalidator::{self, elf64bitvalidationerrors, Elf64BitValidator};
 use std::error::Error;
 
 use crate::utils::parser::Parseable;
@@ -22,8 +22,10 @@ impl Parseable for Elf64_Ehdr {
         // e_ident. It contains important data about the bin file, like endiannes,
         // important offsets, if is 32 bit or not etc.
         
+        let mut elf64bitvalidator = Elf64BitValidator::new(bytes);
+
         let e_ident = &bytes[0..15];
-        _ = elf64bitvalidator::validate_eident(e_ident);
+        _ = elf64bitvalidator.validate_e_ident();
         
         // now, we run out from elf e_ident, we can validate the others
         // field from elf file. The next bytes, uses other types than char,
