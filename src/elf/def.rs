@@ -33,24 +33,32 @@ pub mod elf64strc {
     const _: () = {
         ["Size of Elf64_Ehdr"][::std::mem::size_of::<Elf64_Ehdr>() - 64usize];
         ["Alignment of Elf64_Ehdr"][::std::mem::align_of::<Elf64_Ehdr>() - 8usize];
-        ["Offset of field: Elf64_Ehdr::e_ident"][::std::mem::offset_of!(Elf64_Ehdr, e_ident) - 0usize];
-        ["Offset of field: Elf64_Ehdr::e_type"][::std::mem::offset_of!(Elf64_Ehdr, e_type) - 16usize];
+        ["Offset of field: Elf64_Ehdr::e_ident"]
+            [::std::mem::offset_of!(Elf64_Ehdr, e_ident) - 0usize];
+        ["Offset of field: Elf64_Ehdr::e_type"]
+            [::std::mem::offset_of!(Elf64_Ehdr, e_type) - 16usize];
         ["Offset of field: Elf64_Ehdr::e_machine"]
             [::std::mem::offset_of!(Elf64_Ehdr, e_machine) - 18usize];
         ["Offset of field: Elf64_Ehdr::e_version"]
             [::std::mem::offset_of!(Elf64_Ehdr, e_version) - 20usize];
-        ["Offset of field: Elf64_Ehdr::e_entry"][::std::mem::offset_of!(Elf64_Ehdr, e_entry) - 24usize];
-        ["Offset of field: Elf64_Ehdr::e_phoff"][::std::mem::offset_of!(Elf64_Ehdr, e_phoff) - 32usize];
-        ["Offset of field: Elf64_Ehdr::e_shoff"][::std::mem::offset_of!(Elf64_Ehdr, e_shoff) - 40usize];
-        ["Offset of field: Elf64_Ehdr::e_flags"][::std::mem::offset_of!(Elf64_Ehdr, e_flags) - 48usize];
+        ["Offset of field: Elf64_Ehdr::e_entry"]
+            [::std::mem::offset_of!(Elf64_Ehdr, e_entry) - 24usize];
+        ["Offset of field: Elf64_Ehdr::e_phoff"]
+            [::std::mem::offset_of!(Elf64_Ehdr, e_phoff) - 32usize];
+        ["Offset of field: Elf64_Ehdr::e_shoff"]
+            [::std::mem::offset_of!(Elf64_Ehdr, e_shoff) - 40usize];
+        ["Offset of field: Elf64_Ehdr::e_flags"]
+            [::std::mem::offset_of!(Elf64_Ehdr, e_flags) - 48usize];
         ["Offset of field: Elf64_Ehdr::e_ehsize"]
             [::std::mem::offset_of!(Elf64_Ehdr, e_ehsize) - 52usize];
         ["Offset of field: Elf64_Ehdr::e_phentsize"]
             [::std::mem::offset_of!(Elf64_Ehdr, e_phentsize) - 54usize];
-        ["Offset of field: Elf64_Ehdr::e_phnum"][::std::mem::offset_of!(Elf64_Ehdr, e_phnum) - 56usize];
+        ["Offset of field: Elf64_Ehdr::e_phnum"]
+            [::std::mem::offset_of!(Elf64_Ehdr, e_phnum) - 56usize];
         ["Offset of field: Elf64_Ehdr::e_shentsize"]
             [::std::mem::offset_of!(Elf64_Ehdr, e_shentsize) - 58usize];
-        ["Offset of field: Elf64_Ehdr::e_shnum"][::std::mem::offset_of!(Elf64_Ehdr, e_shnum) - 60usize];
+        ["Offset of field: Elf64_Ehdr::e_shnum"]
+            [::std::mem::offset_of!(Elf64_Ehdr, e_shnum) - 60usize];
         ["Offset of field: Elf64_Ehdr::e_shstrndx"]
             [::std::mem::offset_of!(Elf64_Ehdr, e_shstrndx) - 62usize];
     };
