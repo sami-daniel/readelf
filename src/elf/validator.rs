@@ -10,7 +10,7 @@ pub mod elf64bitvalidator {
             Elf64BitValidator { base: base_bytes }
         }
 
-        pub fn validate_e_ident(&mut self) -> Result<(), elf64bitvalidationerrors::Elf64BitEIdentValidationErrors> {
+        pub fn validate_e_ident(&mut self) -> Result<Box<&'a [u8]>, elf64bitvalidationerrors::Elf64BitEIdentValidationErrors> {
             // first, we need to verify if the e_ident byte arr is more than 16 bytes
             // of size
             if self.base.len() < 16 {
@@ -65,10 +65,10 @@ pub mod elf64bitvalidator {
                 return Err(elf64bitvalidationerrors::Elf64BitEIdentValidationErrors::InvalidPadding.into())
             }
     
-            return Ok(());
+            return Ok(Box::new(e_ident));
         }
     
-        pub fn validate_e_type(&self) -> Result<(), Elf64BitETypeValidationErrors> { // the e_type field uses u16, that occuppes 2 bytes, so we have to cast to apropriatte endiannes
+        pub fn validate_e_type(&self) -> Result<Box<&'a [u8]>, Elf64BitETypeValidationErrors> { // the e_type field uses u16, that occuppes 2 bytes, so we have to cast to apropriatte endiannes
             if self.base.len() < 18 {
                 // this means that e_type has not the required size for e_type, that is 2 bytes
                 return Err(Elf64BitETypeValidationErrors::InvalidETypeSize)
@@ -92,7 +92,7 @@ pub mod elf64bitvalidator {
                 return Err(Elf64BitETypeValidationErrors::InvalidETypeValue(e_type));
             }
 
-            Ok(())
+            Ok(Box::new(e_type_bytes))
         }
 
         fn get_endianness(&self) -> u8 {
