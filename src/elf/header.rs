@@ -5,7 +5,7 @@ use std::error::Error;
 
 impl Parseable for Elf64_Ehdr {
     fn parse(bytes: &[u8]) -> Result<Self, Box<dyn Error>> {
-        // offset: 0x0 -> 0x52
+        // offset: 0x0 -> 0x34
 
         // the objective of this method is to validate AND
         // parse the bytes in an Elf64_Ehdr struct

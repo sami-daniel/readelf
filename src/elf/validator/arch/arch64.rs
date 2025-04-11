@@ -12,7 +12,7 @@ impl<'a> Elf64BitValidator<'a> {
     pub fn validate_e_ident(
         &mut self,
     ) -> Result<Box<&'a [u8]>, Elf64BitEIdentValidationErrors> {
-        // offset: 0x0 -> 0x16
+        // offset: 0x0 -> 0x0F
 
         // first, we need to verify if the e_ident byte arr is more than 16 bytes
         // of size
@@ -93,7 +93,7 @@ impl<'a> Elf64BitValidator<'a> {
 
     pub fn validate_e_type(&self) -> Result<Box<&'a [u8]>, Elf64BitETypeValidationErrors> {
         // the e_type field uses u16, that occuppes 2 bytes, so we have to cast to apropriatte endiannes
-        // offset: 0x17 -> 0x18
+        // offset: 0x10 -> 0x11
 
         if self.base.len() < 18 {
             // this means that e_type has not the required size for e_type, that is 2 bytes
@@ -129,6 +129,8 @@ impl<'a> Elf64BitValidator<'a> {
     }
 
     pub fn validate_e_machine(&self) -> Result<Box<&'a [u8]>, Elf64BitEMachineValidationErrors> {
+        // offsett: 0x12 -> 0x13
+        
         todo!()
     }
     
