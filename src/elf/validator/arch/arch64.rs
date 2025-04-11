@@ -1,17 +1,20 @@
+use byteorder::{BE, ByteOrder, LE};
 use elf64bitvalidationerrors::*;
+
+use crate::utils::endianess::{self, EndianRead};
 
 pub struct Elf64BitValidator<'a> {
     base: &'a [u8],
 }
 
 impl<'a> Elf64BitValidator<'a> {
+    const EI_DATA: usize = 5;
+
     pub fn new(base_bytes: &'a [u8]) -> Self {
         Elf64BitValidator { base: base_bytes }
     }
 
-    pub fn validate_e_ident(
-        &mut self,
-    ) -> Result<Box<&'a [u8]>, Elf64BitEIdentValidationErrors> {
+    pub fn validate_e_ident(&mut self) -> Result<Box<&'a [u8]>, Elf64BitEIdentValidationErrors> {
         // offset: 0x0 -> 0x0F
 
         // first, we need to verify if the e_ident byte arr is more than 16 bytes
@@ -95,6 +98,11 @@ impl<'a> Elf64BitValidator<'a> {
         // the e_type field uses u16, that occuppes 2 bytes, so we have to cast to apropriatte endiannes
         // offset: 0x10 -> 0x11
 
+        // the e_type field describes an way to say the type of file that are this elf. Usually, this
+        // value is ET_REL, witch means that is an relocatable file (.o file without linking), ET_EXEC
+        // witch means that is an executable file, like /bin/ls, ET_DYN for shared object files (.so)
+        // and finally ET_CORE for core dumps (when the file crashes)
+
         if self.base.len() < 18 {
             // this means that e_type has not the required size for e_type, that is 2 bytes
             return Err(Elf64BitETypeValidationErrors::InvalidETypeSize);
@@ -103,25 +111,14 @@ impl<'a> Elf64BitValidator<'a> {
         let endianness = self.get_endianness();
 
         let e_type_bytes = &self.base[16..18];
-
-        let e_type = match endianness {
-            1 => u16::from_le_bytes([e_type_bytes[0], e_type_bytes[1]]),
-            2 => u16::from_be_bytes([e_type_bytes[0], e_type_bytes[1]]),
-            _ => {
-                return Err(
-                    elf64bitvalidationerrors::Elf64BitETypeValidationErrors::InvalidEndianness(
-                        endianness,
-                    ),
-                );
-            }
-        };
+        
+        let e_type = u16::read_from(e_type_bytes, if endianness == 1 { true } else { false });
 
         // validate e_type value (common values are 1=REL, 2=EXEC, 3=SHARED, 4=CORE, 0xff00=Processor-specific, 0xffff=Processor-specific)
-        if !matches!(
-            e_type,
-            1       | 2       | 3       | 4 |    // standard types
-                0xff00  | 0x00ff  | 0xffff // processor-specific
-        ) {
+        if !(matches!(e_type, 0 | 1 | 2 | 3 | 4)
+            || (0xfe00..=0xfeff).contains(&e_type)
+            || (0xff00..=0xffff).contains(&e_type))
+        {
             return Err(Elf64BitETypeValidationErrors::InvalidETypeValue(e_type));
         }
 
@@ -133,11 +130,11 @@ impl<'a> Elf64BitValidator<'a> {
         
         todo!()
     }
-    
+
     fn get_endianness(&self) -> u8 {
         // offset: 0x5
 
-        self.base[5]
+        self.base[Self::EI_DATA]
     }
 }
 
@@ -175,8 +172,7 @@ pub mod elf64bitvalidationerrors {
     }
 
     #[derive(thiserror::Error, Debug)]
-    pub enum Elf64BitEMachineValidationErrors {
-    }
+    pub enum Elf64BitEMachineValidationErrors {}
 }
 
 #[cfg(test)]
