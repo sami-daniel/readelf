@@ -1,7 +1,5 @@
-use byteorder::{BE, ByteOrder, LE};
 use elf64bitvalidationerrors::*;
-
-use crate::utils::endianess::{self, EndianRead};
+use crate::utils::endianess::EndianRead;
 
 pub struct Elf64BitValidator<'a> {
     base: &'a [u8],
@@ -112,7 +110,13 @@ impl<'a> Elf64BitValidator<'a> {
 
         let e_type_bytes = &self.base[16..18];
         
-        let e_type = u16::read_from(e_type_bytes, if endianness == 1 { true } else { false });
+        let end_blk_anlzr = {
+            if endianness == 1 { true }
+            else if endianness == 2 { false }
+            else { return Err(Elf64BitETypeValidationErrors::InvalidEndianness(endianness)); }
+        };
+
+        let e_type = u16::read_from(e_type_bytes, end_blk_anlzr);
 
         // validate e_type value (common values are 1=REL, 2=EXEC, 3=SHARED, 4=CORE, 0xff00=Processor-specific, 0xffff=Processor-specific)
         if !(matches!(e_type, 0 | 1 | 2 | 3 | 4)
