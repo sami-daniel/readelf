@@ -1,5 +1,5 @@
-use elf64bitvalidationerrors::*;
 use crate::utils::endianess::EndianRead;
+use elf64bitvalidationerrors::*;
 
 pub struct Elf64BitValidator<'a> {
     base: &'a [u8],
@@ -109,11 +109,15 @@ impl<'a> Elf64BitValidator<'a> {
         let endianness = self.get_endianness();
 
         let e_type_bytes = &self.base[16..18];
-        
+
         let end_blk_anlzr = {
-            if endianness == 1 { true }
-            else if endianness == 2 { false }
-            else { return Err(Elf64BitETypeValidationErrors::InvalidEndianness(endianness)); }
+            if endianness == 1 {
+                true
+            } else if endianness == 2 {
+                false
+            } else {
+                return Err(Elf64BitETypeValidationErrors::InvalidEndianness(endianness));
+            }
         };
 
         let e_type = u16::read_from(e_type_bytes, end_blk_anlzr);
@@ -131,8 +135,41 @@ impl<'a> Elf64BitValidator<'a> {
 
     pub fn validate_e_machine(&self) -> Result<Box<&'a [u8]>, Elf64BitEMachineValidationErrors> {
         // offsett: 0x12 -> 0x13
-        
-        todo!()
+
+        // here we are using also u16 (64 half) as representational val for theses bytes
+        // the e_machine fields specifies some bunch of macros that expands to some valeus
+        // that define specific arch for the binary. The kernel analizes this val and decides
+        // if can be enable to run it or it should panic
+        // Everytime a support for ELF for some specific arch is developed, is added to the elf.h
+        // as some macro value. We can't validate it value for two reason. First, it have some bunch
+        // of possible values to it, so we are constantly obligatted (if we do this validation) to add
+        // it to our code, and our bindgen tool is not able to tranform the numeric macros of it in some
+        // sort of constants of even enums. It's more easily to not validate it, since we dont have time
+        // nor reason to create every constant in hand. In other way, the values are not easily defined.
+        // It has not an well defined range for it, like from x to y. Apparently, they define the value
+        // like they want it, like a good kernel developer.
+
+        if self.base.len() < 20 {
+            return Err(Elf64BitEMachineValidationErrors::InvalidEMachSize);
+        }
+
+        let endianness = self.get_endianness();
+
+        let end_chk_blk = {
+            if endianness == 1 {
+                true
+            } else if endianness == 2 {
+                false
+            } else {
+                return Err(Elf64BitEMachineValidationErrors::InvalidEndianness(
+                    endianness,
+                ));
+            }
+        };
+
+        let e_machine_bytes = &self.base[18..20];
+
+        Ok(Box::new(e_machine_bytes))
     }
 
     fn get_endianness(&self) -> u8 {
@@ -176,7 +213,12 @@ pub mod elf64bitvalidationerrors {
     }
 
     #[derive(thiserror::Error, Debug)]
-    pub enum Elf64BitEMachineValidationErrors {}
+    pub enum Elf64BitEMachineValidationErrors {
+        #[error("The ELF file has an invalid e_machine size.")]
+        InvalidEMachSize,
+        #[error("The ELF file e_machine describes an invalid endiannes value (`{0}`)")]
+        InvalidEndianness(u8),
+    }
 }
 
 #[cfg(test)]
@@ -362,7 +404,7 @@ mod tests {
             let mut file = create_valid_file();
             file[5] = 1; // LE
             file[16..18].copy_from_slice(&[0x01, 0x00]); // one in LE
-            
+
             let result = Elf64BitValidator::new(&file).validate_e_type().unwrap();
 
             assert!(result[0] == 0x01 && result[1] == 0x00);
@@ -373,7 +415,7 @@ mod tests {
             let mut file = create_valid_file();
             file[5] = 2; // BE
             file[16..18].copy_from_slice(&[0x00, 0x01]); // one in BE
-            
+
             let result = Elf64BitValidator::new(&file).validate_e_type().unwrap();
 
             assert!(result[0] == 0x00 && result[1] == 0x01);
@@ -381,6 +423,88 @@ mod tests {
     }
 
     mod validate_e_machine {
+        use super::super::Elf64BitValidator;
+        use super::super::elf64bitvalidationerrors::Elf64BitEMachineValidationErrors;
 
+        fn create_valid_file() -> Box<[u8]> {
+            let mut file = [0u8; 52];
+            file[0..4].copy_from_slice(&[0x7f, 0x45, 0x4c, 0x46]);
+            file[4] = 2; // 64-bit
+            file[5] = 2; // BE
+            file[6] = 1; // version
+            file[16..18].copy_from_slice(&[0x01, 0x00]);
+
+            Box::new(file)
+        }
+
+        #[test]
+        fn validate_e_machine_returns_invalid_e_machine_size_when_file_size_is_less_than_20() {
+            let file = [0u8; 19];
+
+            let result = Elf64BitValidator::new(&file).validate_e_machine();
+
+            assert_err_variant!(result, Elf64BitEMachineValidationErrors::InvalidEMachSize)
+        }
+
+        #[test]
+        fn validate_e_machine_returns_invalid_endianness_error_when_endianness_is_invalid() {
+            let mut file = create_valid_file();
+            file[5] = 3; // invalid endianness
+
+            let result = Elf64BitValidator::new(&file).validate_e_machine();
+
+            assert_err_variant!(
+                result,
+                Elf64BitEMachineValidationErrors::InvalidEndianness(3)
+            )
+        }
+
+        #[test]
+        fn validate_e_machine_returns_ok_for_known_machine_types() {
+            let mut file = create_valid_file();
+
+            // test some know machine
+            let machine_types = [
+                0x00, // no one specific. This is interessant, cause our bin may describe no spec for atch
+                0x02, // SPARC
+                0x03, // x86
+                0x08, // MIPS
+                0x14, // PowerPC
+                0x28, // ARM
+                0x2A, // SuperH
+                0x32, // IA-64
+                0x3E, // x86-64
+                0xB7, // AArch64
+                0xF3, // RISC-V
+            ];
+
+            for machine_type in machine_types {
+                file[18..20].copy_from_slice(&[0x00, machine_type]);
+                let result = Elf64BitValidator::new(&file).validate_e_machine();
+                assert!(result.is_ok());
+            }
+        }
+
+        #[test]
+        fn validate_e_machine_returns_bytes_according_to_le_endianness() {
+            let mut file = create_valid_file();
+            file[5] = 1; // LE
+            file[18..20].copy_from_slice(&[0x3E, 0x00]); // x86-64 in LE
+
+            let result = Elf64BitValidator::new(&file).validate_e_machine().unwrap();
+
+            assert!(result[0] == 0x3E && result[1] == 0x00);
+        }
+
+        #[test]
+        fn validate_e_machine_returns_bytes_according_to_be_endianness() {
+            let mut file = create_valid_file();
+            file[5] = 2; // BE
+            file[18..20].copy_from_slice(&[0x00, 0x3E]); // x86-64 in BE
+
+            let result = Elf64BitValidator::new(&file).validate_e_machine().unwrap();
+
+            assert!(result[0] == 0x00 && result[1] == 0x3E);
+        }
     }
 }
