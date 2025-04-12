@@ -200,8 +200,8 @@ mod tests {
 
         fn create_valid_file() -> Box<[u8]> {
             let mut file = [0u8; 52];
-            file[5] = 2;
             file[0..4].copy_from_slice(&[0x7f, 0x45, 0x4c, 0x46]);
+            file[5] = 2;
             file[4] = 2;
             file[6] = 1;
 
@@ -245,6 +245,28 @@ mod tests {
             let result = Elf64BitValidator::new(&file).validate_e_type();
 
             assert!(result.is_ok());
+        }
+
+        #[test]
+        fn validate_e_type_return_bytes_accordding_to_the_le_of_file() {
+            let mut file = create_valid_file();
+            file[5] = 1; // LE
+            file[16..18].copy_from_slice(&[0x01, 0x00]); // one in LE
+            
+            let result = Elf64BitValidator::new(&file).validate_e_type().unwrap();
+
+            assert!(result[0] == 0x01 && result[1] == 0x00);
+        }
+
+        #[test]
+        fn validate_e_type_returns_bytes_according_to_the_be_of_file() {
+            let mut file = create_valid_file();
+            file[5] = 2; // BE
+            file[16..18].copy_from_slice(&[0x00, 0x01]); // one in BE
+            
+            let result = Elf64BitValidator::new(&file).validate_e_type().unwrap();
+
+            assert!(result[0] == 0x00 && result[1] == 0x01);
         }
     }
 
