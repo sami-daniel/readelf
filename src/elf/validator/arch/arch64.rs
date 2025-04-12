@@ -194,83 +194,7 @@ mod tests {
         };
     }
 
-    mod test_validate_e_type {
-        use super::super::Elf64BitValidator;
-        use super::super::elf64bitvalidationerrors::Elf64BitETypeValidationErrors;
-
-        fn create_valid_file() -> Box<[u8]> {
-            let mut file = [0u8; 52];
-            file[0..4].copy_from_slice(&[0x7f, 0x45, 0x4c, 0x46]);
-            file[5] = 2;
-            file[4] = 2;
-            file[6] = 1;
-
-            Box::new(file)
-        }
-
-        #[test]
-        fn validate_e_type_returns_invalid_elf_file_err_when_endianness_is_invalid() {
-            let mut file = create_valid_file();
-            file[5] = 3;
-
-            let result = Elf64BitValidator::new(&file).validate_e_type();
-
-            assert_err_variant!(result, Elf64BitETypeValidationErrors::InvalidEndianness(3))
-        }
-
-        #[test]
-        fn validate_e_type_returns_invalid_e_type_size_when_file_size_is_less_than_18() {
-            let file = [0u8; 17];
-
-            let result = Elf64BitValidator::new(&file).validate_e_type();
-
-            assert_err_variant!(result, Elf64BitETypeValidationErrors::InvalidETypeSize)
-        }
-
-        #[test]
-        fn validate_e_type_returns_invalid_e_type_value_when_value_is_invalid() {
-            let mut file = create_valid_file();
-            file[16..18].copy_from_slice(&[0x00, 0x05]);
-
-            let result = Elf64BitValidator::new(&file).validate_e_type();
-
-            assert_err_variant!(result, Elf64BitETypeValidationErrors::InvalidETypeValue(5))
-        }
-
-        #[test]
-        fn validate_e_type_returns_ok_for_valid_e_type() {
-            let mut file = create_valid_file();
-            file[5] = 1; // little endiann
-            file[16..18].copy_from_slice(&[0x01, 0x00]);
-            let result = Elf64BitValidator::new(&file).validate_e_type();
-
-            assert!(result.is_ok());
-        }
-
-        #[test]
-        fn validate_e_type_return_bytes_accordding_to_the_le_of_file() {
-            let mut file = create_valid_file();
-            file[5] = 1; // LE
-            file[16..18].copy_from_slice(&[0x01, 0x00]); // one in LE
-            
-            let result = Elf64BitValidator::new(&file).validate_e_type().unwrap();
-
-            assert!(result[0] == 0x01 && result[1] == 0x00);
-        }
-
-        #[test]
-        fn validate_e_type_returns_bytes_according_to_the_be_of_file() {
-            let mut file = create_valid_file();
-            file[5] = 2; // BE
-            file[16..18].copy_from_slice(&[0x00, 0x01]); // one in BE
-            
-            let result = Elf64BitValidator::new(&file).validate_e_type().unwrap();
-
-            assert!(result[0] == 0x00 && result[1] == 0x01);
-        }
-    }
-
-    mod test_validate_e_ident_tests {
+    mod validate_e_ident {
         use super::super::Elf64BitValidator;
         use super::super::elf64bitvalidationerrors::Elf64BitEIdentValidationErrors;
 
@@ -378,5 +302,85 @@ mod tests {
 
             assert!(result.is_ok())
         }
+    }
+
+    mod validate_e_type {
+        use super::super::Elf64BitValidator;
+        use super::super::elf64bitvalidationerrors::Elf64BitETypeValidationErrors;
+
+        fn create_valid_file() -> Box<[u8]> {
+            let mut file = [0u8; 52];
+            file[0..4].copy_from_slice(&[0x7f, 0x45, 0x4c, 0x46]);
+            file[5] = 2;
+            file[4] = 2;
+            file[6] = 1;
+
+            Box::new(file)
+        }
+
+        #[test]
+        fn validate_e_type_returns_invalid_elf_file_err_when_endianness_is_invalid() {
+            let mut file = create_valid_file();
+            file[5] = 3;
+
+            let result = Elf64BitValidator::new(&file).validate_e_type();
+
+            assert_err_variant!(result, Elf64BitETypeValidationErrors::InvalidEndianness(3))
+        }
+
+        #[test]
+        fn validate_e_type_returns_invalid_e_type_size_when_file_size_is_less_than_18() {
+            let file = [0u8; 17];
+
+            let result = Elf64BitValidator::new(&file).validate_e_type();
+
+            assert_err_variant!(result, Elf64BitETypeValidationErrors::InvalidETypeSize)
+        }
+
+        #[test]
+        fn validate_e_type_returns_invalid_e_type_value_when_value_is_invalid() {
+            let mut file = create_valid_file();
+            file[16..18].copy_from_slice(&[0x00, 0x05]);
+
+            let result = Elf64BitValidator::new(&file).validate_e_type();
+
+            assert_err_variant!(result, Elf64BitETypeValidationErrors::InvalidETypeValue(5))
+        }
+
+        #[test]
+        fn validate_e_type_returns_ok_for_valid_e_type() {
+            let mut file = create_valid_file();
+            file[5] = 1; // little endiann
+            file[16..18].copy_from_slice(&[0x01, 0x00]);
+            let result = Elf64BitValidator::new(&file).validate_e_type();
+
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn validate_e_type_return_bytes_accordding_to_the_le_of_file() {
+            let mut file = create_valid_file();
+            file[5] = 1; // LE
+            file[16..18].copy_from_slice(&[0x01, 0x00]); // one in LE
+            
+            let result = Elf64BitValidator::new(&file).validate_e_type().unwrap();
+
+            assert!(result[0] == 0x01 && result[1] == 0x00);
+        }
+
+        #[test]
+        fn validate_e_type_returns_bytes_according_to_the_be_of_file() {
+            let mut file = create_valid_file();
+            file[5] = 2; // BE
+            file[16..18].copy_from_slice(&[0x00, 0x01]); // one in BE
+            
+            let result = Elf64BitValidator::new(&file).validate_e_type().unwrap();
+
+            assert!(result[0] == 0x00 && result[1] == 0x01);
+        }
+    }
+
+    mod validate_e_machine {
+
     }
 }
