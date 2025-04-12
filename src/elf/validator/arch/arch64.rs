@@ -182,7 +182,7 @@ mod tests {
             match &$result {
                 Err($pattern) => {}
                 _ => panic!(
-                    "Esperado Err({}), mas foi {:?}",
+                    "Expected Err({}), but was {:?}",
                     stringify!($pattern),
                     $result
                 ),
